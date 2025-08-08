@@ -1,0 +1,52 @@
+Fullstack Engineer (React, Rails, Drupal)
+Remote
+Wilcore believes that the best products are built when companies understand and value the things they are working on. We value learning and growth and the ability to make a big impact at a small company. We believe that we can make big changes happen and improve the daily lives of millions of people by bringing quality software to the federal space.
+
+ 
+
+We are hiring a Full Stack Engineer to help manage, expand and oversee our rapidly growing portfolio of federal contracts.
+
+ 
+
+What you'll be doing:
+
+You’ll contribute to both front-end and back-end development of form-related services and features on VA.gov. This includes building reusable React components that follow the VA Design System, implementing dynamic schema-based forms, managing data validation, and developing secure APIs that support submission workflows. You’ll help modernize legacy form infrastructure, optimize user experience, and ensure your work is performant, testable, and compliant with 508 accessibility and security standards.
+
+What you’ll bring:
+
+4+ years of experience in full stack development
+Strong experience with JavaScript, React, Ruby on Rails, and REST APIs
+Expertise in Drupal site building, theming, and custom module development using PHP and front-end technologies.
+Familiarity with modern CI/CD practices and Git workflows
+Experience working with cloud platforms (AWS preferred)
+Understanding of accessibility best practices and web standards (WCAG, Section 508)
+Strong communication and collaboration skills in Agile environments
+Bonus Qualifications
+
+Prior experience supporting the Department of Veterans Affairs or federal agencies
+Familiarity with JSON Schema Form libraries (e.g., react-jsonschema-form)
+Knowledge of VA.gov architecture and building forms on VA.gov
+Experience with automated testing and 508 scanning tools (e.g., Axe, pa11y)
+ 
+
+Requirements:
+
+      Must be a US Citizen and able to work domestically
+      Must be able to attain low-level security clearance
+Education:
+
+      Bachelor’s degree
+Benefits:
+
+      Fully remote
+      Annual stipend
+      Comprehensive Benefits Package
+      Company Match 401(k) plan
+      Flexible PTO, Paid Holidays
+Wilcore is an Equal Opportunity Employer and does not discriminate against applicants based on race, religion, color, disability, medical condition, legally protected genetic information, national origin, gender, sexual orientation, marital status, gender identity or expression, sex (including pregnancy, childbirth or related medical conditions), age, veteran status or other legally protected characteristics. Any applicant with a mental or physical disability who requires an accommodation during the application process should contact an Wilcore HR representative to request such an accommodation by emailing hr@wilcore.io
+
+Compensation:
+
+At Wilcore, it’s important each employee is compensated competitively and fairly. In alignment with state legal requirements. A range for the included position is listed below. Be advised, actual offer details are determined by job category, job location, and candidate skill level.
+
+United States Wage Range: $100,000 – $130,000
