@@ -9,10 +9,14 @@ interface UploadedFile {
 interface ChallengeResult {
   challengeLink: string;
   githubRepo: string;
+  devUrl: string;
   message?: string;
 }
 
 function App() {
+  const [copiedGit, setCopiedGit] = useState(false);
+  const [copiedRepo, setCopiedRepo] = useState(false);
+  const [copiedVSCode, setCopiedVSCode] = useState(false);
   const [resumeFile, setResumeFile] = useState<UploadedFile | null>(null);
   const [jobDescFile, setJobDescFile] = useState<UploadedFile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -20,7 +24,12 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   const handleFileUpload = useCallback((file: File, type: 'resume' | 'jobdesc') => {
-    const preview = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    const sizeInKB = file.size / 1024;
+    const sizeInMB = file.size / 1024 / 1024;
+    const sizeDisplay = sizeInMB >= 1
+      ? `${sizeInMB.toFixed(2)} MB`
+      : `${sizeInKB.toFixed(2)} KB`;
+    const preview = `${file.name} (${sizeDisplay})`;
     const uploadedFile = { file, preview };
     
     if (type === 'resume') {
@@ -115,30 +124,68 @@ function App() {
 
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-              <div className="flex items-center mb-3">
-                <ExternalLink className="w-5 h-5 text-blue-600 mr-2" />
-                <h3 className="font-semibold text-blue-900">Coding Challenge</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-blue-900 flex items-center">
+                  <ExternalLink className="w-5 h-5 text-blue-600 mr-2" />
+                  Coding Challenge
+                </h3>
+                <button
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                    copiedRepo 
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:border-blue-300'
+                  }`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.challengeLink);
+                    setCopiedRepo(true);
+                    setTimeout(() => setCopiedRepo(false), 2000);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>{copiedRepo ? 'Copied!' : 'Copy'}</span>
+                </button>
               </div>
               <a 
                 href={result.challengeLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline break-all transition-colors"
+                className="text-blue-600 hover:text-blue-800 underline break-all transition-colors text-sm"
               >
                 {result.challengeLink}
               </a>
             </div>
 
             <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-100">
-              <div className="flex items-center mb-3">
-                <Github className="w-5 h-5 text-gray-700 mr-2" />
-                <h3 className="font-semibold text-gray-900">GitHub Repository</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 flex items-center">
+                  <Github className="w-5 h-5 text-gray-700 mr-2" />
+                  GitHub Repository
+                </h3>
+                <button
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                    copiedVSCode 
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:border-blue-300'
+                  }`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.githubRepo);
+                    setCopiedVSCode(true);
+                    setTimeout(() => setCopiedVSCode(false), 2000);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>{copiedVSCode ? 'Copied!' : 'Copy'}</span>
+                </button>
               </div>
               <a 
                 href={result.githubRepo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-700 hover:text-gray-900 underline break-all transition-colors"
+                className="text-gray-700 hover:text-gray-900 underline break-all transition-colors text-sm"
               >
                 {result.githubRepo}
               </a>
@@ -149,12 +196,47 @@ function App() {
                 <p className="text-yellow-800">{result.message}</p>
               </div>
             )}
+
+            {/* Git Clone Section */}
+            {result.githubRepo && (
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900 flex items-center">
+                    <Github className="w-5 h-5 text-gray-700 mr-2" />
+                    Git Clone
+                  </h3>
+                  <button
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                      copiedGit 
+                        ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:border-blue-300'
+                    }`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(`git clone ${result.githubRepo}`);
+                      setCopiedGit(true);
+                      setTimeout(() => setCopiedGit(false), 2000);
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>{copiedGit ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm text-gray-100">
+                  git clone {result.githubRepo}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 text-center">
             <button
               onClick={resetForm}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="text-white px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              style={{ backgroundColor: '#00A287' }}
+              onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00917A'}
+              onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00A287'}
             >
               Generate Another Challenge
             </button>
@@ -168,10 +250,11 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full border border-gray-100">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-4">
-            <FileText className="w-8 h-8 text-blue-600" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
+            <img src="/aries-logo.svg" alt="ARIES Logo" className="w-16 h-16" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Coding Challenge Generator</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">ARIES</h1>
+          <p className="text-lg font-medium text-gray-700 mb-4">Automated Routines for Intelligent Engineering Scenarios</p>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Upload your resume and a job description to generate a personalized coding challenge. 
             We'll create a GitHub repository with tailored tasks based on the role requirements.
@@ -271,7 +354,20 @@ function App() {
           <button
             onClick={submitFiles}
             disabled={!resumeFile || !jobDescFile || isUploading}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center mx-auto min-w-[200px]"
+            className="text-white px-8 py-4 rounded-xl font-semibold disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center mx-auto min-w-[200px]"
+            style={{ 
+              backgroundColor: (!resumeFile || !jobDescFile || isUploading) ? '#9CA3AF' : '#00A287'
+            }}
+            onMouseEnter={(e) => {
+              if (resumeFile && jobDescFile && !isUploading) {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#00917A';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (resumeFile && jobDescFile && !isUploading) {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#00A287';
+              }
+            }}
           >
             {isUploading ? (
               <>
