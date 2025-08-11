@@ -1,13 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
-
-// YouTube API type declarations
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
+import Login from './components/Login';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { useTheme } from './theme/ThemeContext';
 
 interface UploadedFile {
   file: File;
@@ -22,7 +18,7 @@ interface ChallengeResult {
 }
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const [copiedGit, setCopiedGit] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
   const [copiedVSCode, setCopiedVSCode] = useState(false);
@@ -31,6 +27,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   
   // Simple audio: autoplay muted on load
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -50,6 +47,16 @@ function App() {
     };
   }, []);
 
+  // Auth state listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u: User | null) => setUser(u));
+    return () => unsub();
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    await signOut(auth);
+  }, []);
+
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
@@ -65,9 +72,7 @@ function App() {
     });
   }, []);
 
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(!isDarkMode);
-  }, [isDarkMode]);
+  // Dark mode is managed globally via ThemeContext
 
   // (YouTube player removed)
 
@@ -157,6 +162,30 @@ function App() {
     setResult(null);
     setError(null);
   };
+
+  // When signed out show Login
+  if (!user) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+      }`}>
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className={`fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+            isDarkMode 
+              ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+              : 'bg-white hover:bg-gray-50 text-gray-700'
+          }`}
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+        <Login />
+      </div>
+    );
+  }
 
   if (result) {
     return (
@@ -353,7 +382,7 @@ function App() {
           ? 'bg-gray-800 border-gray-700' 
           : 'bg-white border-gray-100'
       }`}>
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
           <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4">
             <img src="/aries-logo.svg" alt="ARIES Logo" className="w-20 h-20" />
           </div>
@@ -363,6 +392,12 @@ function App() {
             Upload your resume and a job description to generate a personalized coding challenge. 
             We'll create a GitHub repository with tailored tasks based on the role requirements.
           </p>
+          <button
+            onClick={handleSignOut}
+            className={`absolute right-0 top-0 text-sm px-3 py-1 rounded-md border ${isDarkMode ? 'text-gray-200 border-gray-600 hover:bg-gray-700' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+          >
+            Sign out
+          </button>
         </div>
 
   {/* YouTube player removed */}
