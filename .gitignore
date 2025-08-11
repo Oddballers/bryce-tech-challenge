@@ -46,3 +46,6 @@ Icon?
 
 # Others
 *.log
+
+# Firebase
+.firebaserc
