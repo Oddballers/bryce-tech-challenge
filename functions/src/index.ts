@@ -12,8 +12,7 @@ import Busboy from "busboy";
 
 // Only use dotenv in local development
 if (process.env.NODE_ENV !== 'production') {
-  const dotenv = require('dotenv');
-  dotenv.config();
+  import('dotenv').then(dotenv => dotenv.config());
 }
 
 setGlobalOptions({ maxInstances: 10 });
@@ -336,13 +335,13 @@ export const generateCodingChallengeV2 = onRequest({ cors: true, secrets: [OPENA
       return;
     }
 
-    const prompt = `You are an expert technical interviewer. Based on the resume below and the job description, generate a coding challenge that tests relevant skills. This coding challenge needs to be in text format, styled for a GitHub readme.\n\nResume:\n${resumeText}\n\nJob Description:\n${jdText}\n\nGenerate a coding challenge with the following structure:\n# Coding Challenge\n## Problem Description\n## Requirements\n## Technical Specifications\n## Evaluation Criteria\n## Submission Instructions\n\nCoding Challenge:`;
+    const prompt = `You are an expert technical interviewer. Based on the resume below and the job description, generate a coding challenge that tests relevant skills.Take 40% of the user's resume and 60% of the job description when creating this challenge.  Add several starter code files for the user to work with.  Make sure to add some bugs in these starter files.  Do not call out in the file where the bug is located.  Keep this a secret. This coding challenge needs to be in text format, styled for a GitHub readme.\n\nResume:\n${resumeText}\n\nJob Description:\n${jdText}\n\nGenerate a coding challenge with the following structure:\n# Coding Challenge\n## Problem Description\n## Requirements\n## Technical Specifications\n## Evaluation Criteria\n## Submission Instructions\n\nCoding Challenge:`;
 
     logger.info("Making OpenAI API call...");
   const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
-        model: "gpt-4.1-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "user",
@@ -350,7 +349,7 @@ export const generateCodingChallengeV2 = onRequest({ cors: true, secrets: [OPENA
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 5000
       },
       {
         headers: {
