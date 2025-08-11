@@ -96,7 +96,8 @@ export const generateCodingChallenge = onRequest({ cors: true, secrets: [OPENAI_
       Authorization: `Bearer ${openaiKey}`,
           "Content-Type": "application/json"
         },
-        timeout: 30000
+        timeout: 300000,
+        
       }
     );
 
@@ -356,7 +357,7 @@ export const generateCodingChallengeV2 = onRequest({ cors: true, secrets: [OPENA
       Authorization: `Bearer ${openaiKey}`,
           "Content-Type": "application/json"
         },
-        timeout: 30000
+        timeout: 300000
       }
     );
 

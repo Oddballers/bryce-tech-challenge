@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Play, Pause, Volume2, VolumeX, Moon, Sun } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Moon, Sun } from 'lucide-react';
 
 // YouTube API type declarations
 declare global {
@@ -22,12 +22,6 @@ interface ChallengeResult {
 }
 
 function App() {
-  const youtubePlayerRef = useRef<any>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.7);
-  const [isYouTubeReady, setIsYouTubeReady] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [copiedGit, setCopiedGit] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
@@ -38,128 +32,11 @@ function App() {
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const togglePlay = useCallback(() => {
-    if (youtubePlayerRef.current && isYouTubeReady) {
-      if (isPlaying) {
-        youtubePlayerRef.current.pauseVideo();
-      } else {
-        youtubePlayerRef.current.playVideo();
-      }
-    }
-  }, [isPlaying, isYouTubeReady]);
-
-  const toggleMute = useCallback(() => {
-    if (youtubePlayerRef.current && isYouTubeReady) {
-      if (isMuted) {
-        youtubePlayerRef.current.unMute();
-        youtubePlayerRef.current.setVolume(volume * 100);
-      } else {
-        youtubePlayerRef.current.mute();
-      }
-      setIsMuted(!isMuted);
-    }
-  }, [isMuted, volume, isYouTubeReady]);
-
-  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (youtubePlayerRef.current && isYouTubeReady) {
-      youtubePlayerRef.current.setVolume(newVolume * 100);
-      if (newVolume === 0) {
-        youtubePlayerRef.current.mute();
-        setIsMuted(true);
-      } else if (isMuted) {
-        youtubePlayerRef.current.unMute();
-        setIsMuted(false);
-      }
-    }
-  }, [isYouTubeReady, isMuted]);
-
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode(!isDarkMode);
   }, [isDarkMode]);
 
-  // YouTube API initialization
-  useEffect(() => {
-    // Load YouTube API
-    const loadYouTubeAPI = () => {
-      if (window.YT) {
-        initializePlayer();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://www.youtube.com/iframe_api';
-      script.onload = () => {
-        window.onYouTubeIframeAPIReady = initializePlayer;
-      };
-      document.body.appendChild(script);
-    };
-
-    const initializePlayer = () => {
-      youtubePlayerRef.current = new window.YT.Player('youtube-player', {
-        height: '0',
-        width: '0',
-        videoId: 'qItugh-fFgg', // Extracted from your URL
-        playerVars: {
-          start: 0, // Start from the beginning
-          autoplay: 1, // Enable autoplay
-          controls: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0,
-        },
-        events: {
-          onReady: (event: any) => {
-            setIsYouTubeReady(true);
-            event.target.setVolume(volume * 100);
-            // Attempt autoplay after player is ready
-            setTimeout(() => {
-              try {
-                event.target.playVideo();
-              } catch (error) {
-                console.log('Autoplay blocked by browser - user interaction required');
-              }
-            }, 100);
-          },
-          onStateChange: (event: any) => {
-            const playerState = event.data;
-            if (playerState === window.YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-            } else if (playerState === window.YT.PlayerState.PAUSED || playerState === window.YT.PlayerState.ENDED) {
-              setIsPlaying(false);
-            }
-          },
-        },
-      });
-    };
-
-    // Add document click handler for autoplay fallback
-    const handleFirstInteraction = () => {
-      if (!hasUserInteracted && youtubePlayerRef.current && isYouTubeReady) {
-        setHasUserInteracted(true);
-        try {
-          youtubePlayerRef.current.playVideo();
-        } catch (error) {
-          console.log('Unable to start autoplay');
-        }
-        document.removeEventListener('click', handleFirstInteraction);
-      }
-    };
-
-    loadYouTubeAPI();
-
-    // Add one-time click listener for autoplay fallback
-    document.addEventListener('click', handleFirstInteraction);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('click', handleFirstInteraction);
-      if (youtubePlayerRef.current) {
-        youtubePlayerRef.current.destroy();
-      }
-    };
-  }, [volume]);
+  // (YouTube player removed)
 
   const handleFileUpload = useCallback((file: File, type: 'resume' | 'jobdesc') => {
     const sizeInKB = file.size / 1024;
@@ -441,72 +318,7 @@ function App() {
           </p>
         </div>
 
-        {/* Audio Player */}
-        <div className="mb-6">
-          <div className={`backdrop-blur-sm rounded-lg p-4 shadow-sm border max-w-sm mx-auto ${
-            isDarkMode 
-              ? 'bg-gray-700/50 border-gray-600' 
-              : 'bg-white/50 border-gray-100'
-          }`}>
-            <div className="flex items-center space-x-3">
-              {/* Play/Pause Button */}
-              <button
-                onClick={togglePlay}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm"
-                style={{ 
-                  backgroundColor: '#00A287',
-                  color: 'white'
-                }}
-                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00917A'}
-                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00A287'}
-              >
-                {isPlaying ? (
-                  <Pause className="w-3 h-3" />
-                ) : (
-                  <Play className="w-3 h-3 ml-0.5" />
-                )}
-              </button>
-
-              {/* Volume Controls */}
-              <div className="flex items-center space-x-2 flex-1">
-                <button
-                  onClick={toggleMute}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-600 hover:bg-gray-500' 
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  }`}
-                >
-                  {isMuted ? (
-                    <VolumeX className={`w-3 h-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
-                  ) : (
-                    <Volume2 className={`w-3 h-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
-                  )}
-                </button>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer volume-slider ${
-                    isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
-                  }`}
-                />
-              </div>
-
-              {/* Audio Info */}
-              <div className="text-right">
-                <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>All Your Base</div>
-              </div>
-            </div>
-
-            {/* Hidden YouTube Player */}
-            <div id="youtube-player" style={{ display: 'none' }}></div>
-          </div>
-        </div>
+  {/* YouTube player removed */}
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Resume Upload */}
