@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Moon, Sun } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
 
 // YouTube API type declarations
 declare global {
@@ -31,6 +31,39 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Simple audio: autoplay muted on load
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  useEffect(() => {
+    const audio = new Audio('/audio/allYourBase.m4a');
+    audio.loop = true;
+    audio.muted = true; // start muted to satisfy autoplay policies
+    audio.volume = 0.7;
+    audioRef.current = audio;
+    audio.play().catch(() => {/* ignore autoplay errors */});
+    return () => {
+      try { audio.pause(); } catch {}
+      // release
+      audioRef.current = null;
+    };
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      const a = audioRef.current;
+      if (a) {
+        a.muted = next;
+        if (!next) {
+          // ensure playback resumes on unmute within user gesture
+          a.play().catch(() => {});
+        }
+      }
+      return next;
+    });
+  }, []);
 
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode(!isDarkMode);
@@ -289,6 +322,20 @@ function App() {
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
         : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
     }`}>
+      {/* Controls: Mute + Dark Mode */}
+      <button
+        onClick={toggleMute}
+        aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+        className={`fixed top-4 right-16 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+          isDarkMode 
+            ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' 
+            : 'bg-white hover:bg-gray-50 text-gray-700'
+        }`}
+        title={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+      </button>
+
       {/* Dark Mode Toggle */}
       <button
         onClick={toggleDarkMode}
