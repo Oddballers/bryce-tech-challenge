@@ -84,7 +84,7 @@ function App() {
       formData.append('job_description', jobDescFile.file);
 
       // Use environment variable for function URL, fallback to placeholder
-      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge';
+      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallengeV2';
       const response = await fetch(functionUrl, {
         method: 'POST',
         body: formData,
