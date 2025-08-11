@@ -3,7 +3,6 @@ import { auth } from '../firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -36,26 +35,8 @@ export default function Login() {
       if (mode === 'signin') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth, email, password); // will set up later
       }
-    } catch (e: any) {
-      const msg = mapAuthError(e);
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onForgotPassword = async () => {
-    if (!email) {
-      setError('Enter your email above, then click "Forgot password".');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setError('Password reset email sent. Check your inbox.');
     } catch (e: any) {
       const msg = mapAuthError(e);
       setError(msg);
@@ -148,11 +129,6 @@ export default function Login() {
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
             <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Remember me</span>
           </label>
-          {mode === 'signin' && (
-            <button type="button" onClick={onForgotPassword} className="text-blue-600 hover:underline disabled:opacity-60" disabled={loading}>
-              Forgot password?
-            </button>
-          )}
         </div>
         <button
           type="submit"
@@ -163,31 +139,6 @@ export default function Login() {
           {mode === 'signin' ? 'Sign in' : 'Create account'}
         </button>
       </form>
-      <div className={`mt-4 text-center text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-        {mode === 'signin' ? (
-          <>
-            <span>Don&apos;t have an account?</span>{' '}
-            <button
-              type="button"
-              className="text-blue-600 hover:underline"
-              onClick={() => { setMode('signup'); setError(null); }}
-            >
-              Create one
-            </button>
-          </>
-        ) : (
-          <>
-            <span>Already have an account?</span>{' '}
-            <button
-              type="button"
-              className="text-blue-600 hover:underline"
-              onClick={() => { setMode('signin'); setError(null); }}
-            >
-              Sign in
-            </button>
-          </>
-        )}
-      </div>
     </div>
   );
 }
