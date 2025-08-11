@@ -1,5 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
+
+// YouTube API type declarations
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 interface UploadedFile {
   file: File;
@@ -14,6 +22,7 @@ interface ChallengeResult {
 }
 
 function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [copiedGit, setCopiedGit] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
   const [copiedVSCode, setCopiedVSCode] = useState(false);
@@ -22,6 +31,45 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Simple audio: autoplay muted on load
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  useEffect(() => {
+    const audio = new Audio('/audio/allYourBase.m4a');
+    audio.loop = true;
+    audio.muted = true; // start muted to satisfy autoplay policies
+    audio.volume = 0.7;
+    audioRef.current = audio;
+    audio.play().catch(() => {/* ignore autoplay errors */});
+    return () => {
+      try { audio.pause(); } catch {}
+      // release
+      audioRef.current = null;
+    };
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      const a = audioRef.current;
+      if (a) {
+        a.muted = next;
+        if (!next) {
+          // ensure playback resumes on unmute within user gesture
+          a.play().catch(() => {});
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(!isDarkMode);
+  }, [isDarkMode]);
+
+  // (YouTube player removed)
 
   const handleFileUpload = useCallback((file: File, type: 'resume' | 'jobdesc') => {
     const sizeInKB = file.size / 1024;
@@ -84,7 +132,7 @@ function App() {
       formData.append('job_description', jobDescFile.file);
 
       // Use environment variable for function URL, fallback to placeholder
-      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge';
+      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallengeV2';
       const response = await fetch(functionUrl, {
         method: 'POST',
         body: formData,
@@ -112,14 +160,36 @@ function App() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full border border-gray-100">
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+      }`}>
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className={`fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+            isDarkMode 
+              ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+              : 'bg-white hover:bg-gray-50 text-gray-700'
+          }`}
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+        
+        <div className={`rounded-2xl shadow-2xl p-8 max-w-2xl w-full border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-100'
+        }`}>
           <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+              isDarkMode ? 'bg-green-900' : 'bg-green-100'
+            }`}>
+              <CheckCircle className={`w-8 h-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Challenge Generated!</h1>
-            <p className="text-gray-600">Your personalized coding challenge is ready</p>
+            <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Challenge Generated!</h1>
+            <p className={`${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>Your personalized coding challenge is ready</p>
           </div>
 
           <div className="space-y-6">
@@ -247,30 +317,70 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full border border-gray-100">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+    }`}>
+      {/* Controls: Mute + Dark Mode */}
+      <button
+        onClick={toggleMute}
+        aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+        className={`fixed top-4 right-16 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+          isDarkMode 
+            ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' 
+            : 'bg-white hover:bg-gray-50 text-gray-700'
+        }`}
+        title={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+      </button>
+
+      {/* Dark Mode Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className={`fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+          isDarkMode 
+            ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+            : 'bg-white hover:bg-gray-50 text-gray-700'
+        }`}
+      >
+        {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+      
+      <div className={`rounded-2xl shadow-2xl p-8 max-w-4xl w-full border ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-100'
+      }`}>
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
-            <img src="/aries-logo.svg" alt="ARIES Logo" className="w-16 h-16" />
+          <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4">
+            <img src="/aries-logo.svg" alt="ARIES Logo" className="w-20 h-20" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ARIES</h1>
-          <p className="text-lg font-medium text-gray-700 mb-4">Automated Routines for Intelligent Engineering Scenarios</p>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>ARIES</h1>
+          <p className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Automated Routines for Intelligent Engineering Scenarios</p>
+          <p className={`max-w-2xl mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Upload your resume and a job description to generate a personalized coding challenge. 
             We'll create a GitHub repository with tailored tasks based on the role requirements.
           </p>
         </div>
 
+  {/* YouTube player removed */}
+
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Resume Upload */}
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
               1. Upload Your Resume
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'resume')}
               onDragOver={handleDragOver}
-              className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+                isDarkMode
+                  ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+              }`}
             >
               {resumeFile ? (
                 <div className="space-y-3">
@@ -285,12 +395,16 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 group-hover:text-blue-600 mx-auto transition-colors" />
+                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-400 group-hover:text-blue-400' 
+                      : 'text-gray-400 group-hover:text-blue-600'
+                  }`} />
                   <div>
-                    <p className="text-gray-700 font-medium">Drop your resume here</p>
-                    <p className="text-gray-500 text-sm">or click to browse</p>
+                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop your resume here</p>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className="text-xs text-gray-400">PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -304,13 +418,17 @@ function App() {
 
           {/* Job Description Upload */}
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
               2. Upload Job Description
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'jobdesc')}
               onDragOver={handleDragOver}
-              className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+                isDarkMode
+                  ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+              }`}
             >
               {jobDescFile ? (
                 <div className="space-y-3">
@@ -325,12 +443,16 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 group-hover:text-blue-600 mx-auto transition-colors" />
+                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-400 group-hover:text-blue-400' 
+                      : 'text-gray-400 group-hover:text-blue-600'
+                  }`} />
                   <div>
-                    <p className="text-gray-700 font-medium">Drop job description here</p>
-                    <p className="text-gray-500 text-sm">or click to browse</p>
+                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop job description here</p>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className="text-xs text-gray-400">PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -382,33 +504,39 @@ function App() {
             )}
           </button>
           
-          <p className="text-xs text-gray-500 mt-4 max-w-lg mx-auto">
+          <p className={`text-xs mt-4 max-w-lg mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             3. Click "Generate Challenge" to create your personalized coding challenge and GitHub repository
           </p>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100">
+        <div className={`mt-8 pt-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
           <div className="grid md:grid-cols-3 gap-4 text-center">
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">1</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>1</span>
               </div>
-              <h3 className="font-medium text-gray-900">Upload Files</h3>
-              <p className="text-xs text-gray-600">Resume and job description</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Upload Files</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Resume and job description</p>
             </div>
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">2</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>2</span>
               </div>
-              <h3 className="font-medium text-gray-900">AI Analysis</h3>
-              <p className="text-xs text-gray-600">Match skills to requirements</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>AI Analysis</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Match skills to requirements</p>
             </div>
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">3</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>3</span>
               </div>
-              <h3 className="font-medium text-gray-900">Get Challenge</h3>
-              <p className="text-xs text-gray-600">Personalized coding tasks</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Get Challenge</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Personalized coding tasks</p>
             </div>
           </div>
         </div>

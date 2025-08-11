@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Volume Slider Styles */
+input[type="range"].volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"].volume-slider::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Dark mode slider track */
+.bg-gray-600 input[type="range"].volume-slider::-webkit-slider-track {
+  background: #4b5563;
+}
+
+input[type="range"].volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #00A287;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+input[type="range"].volume-slider::-webkit-slider-thumb:hover {
+  background: #00917A;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+input[type="range"].volume-slider::-moz-range-track {
+  background: #e5e7eb;
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+}
+
+input[type="range"].volume-slider::-moz-range-thumb {
+  background: #00A287;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+input[type="range"].volume-slider::-moz-range-thumb:hover {
+  background: #00917A;
+}

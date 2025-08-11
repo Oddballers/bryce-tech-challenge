@@ -1,0 +1,9 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#00A287" stroke-width="20"/>
+  
+  <!-- Three curved lines that create the distinctive pattern -->
+  <path d="M 40 100 Q 60 40, 100 100 Q 140 160, 160 100" fill="none" stroke="#00A287" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 50 100 Q 70 50, 100 100 Q 130 150, 150 100" fill="none" stroke="#00A287" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 60 100 Q 80 60, 100 100 Q 120 140, 140 100" fill="none" stroke="#00A287" stroke-width="16" stroke-linecap="round"/>
+</svg>
