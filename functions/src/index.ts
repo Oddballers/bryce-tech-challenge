@@ -349,7 +349,7 @@ export const generateCodingChallengeV2 = onRequest({ cors: true, secrets: [OPENA
           }
         ],
         temperature: 0.7,
-        max_tokens: 5000
+        max_tokens: 6000
       },
       {
         headers: {

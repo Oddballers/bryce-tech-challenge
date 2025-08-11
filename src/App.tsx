@@ -1,5 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Upload, FileText, Github, ExternalLink, CheckCircle, AlertCircle, Loader2, Play, Pause, Volume2, VolumeX, Moon, Sun } from 'lucide-react';
+
+// YouTube API type declarations
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 interface UploadedFile {
   file: File;
@@ -14,6 +22,13 @@ interface ChallengeResult {
 }
 
 function App() {
+  const youtubePlayerRef = useRef<any>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.7);
+  const [isYouTubeReady, setIsYouTubeReady] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [copiedGit, setCopiedGit] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
   const [copiedVSCode, setCopiedVSCode] = useState(false);
@@ -22,6 +37,129 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const togglePlay = useCallback(() => {
+    if (youtubePlayerRef.current && isYouTubeReady) {
+      if (isPlaying) {
+        youtubePlayerRef.current.pauseVideo();
+      } else {
+        youtubePlayerRef.current.playVideo();
+      }
+    }
+  }, [isPlaying, isYouTubeReady]);
+
+  const toggleMute = useCallback(() => {
+    if (youtubePlayerRef.current && isYouTubeReady) {
+      if (isMuted) {
+        youtubePlayerRef.current.unMute();
+        youtubePlayerRef.current.setVolume(volume * 100);
+      } else {
+        youtubePlayerRef.current.mute();
+      }
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted, volume, isYouTubeReady]);
+
+  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (youtubePlayerRef.current && isYouTubeReady) {
+      youtubePlayerRef.current.setVolume(newVolume * 100);
+      if (newVolume === 0) {
+        youtubePlayerRef.current.mute();
+        setIsMuted(true);
+      } else if (isMuted) {
+        youtubePlayerRef.current.unMute();
+        setIsMuted(false);
+      }
+    }
+  }, [isYouTubeReady, isMuted]);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(!isDarkMode);
+  }, [isDarkMode]);
+
+  // YouTube API initialization
+  useEffect(() => {
+    // Load YouTube API
+    const loadYouTubeAPI = () => {
+      if (window.YT) {
+        initializePlayer();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.onload = () => {
+        window.onYouTubeIframeAPIReady = initializePlayer;
+      };
+      document.body.appendChild(script);
+    };
+
+    const initializePlayer = () => {
+      youtubePlayerRef.current = new window.YT.Player('youtube-player', {
+        height: '0',
+        width: '0',
+        videoId: 'qItugh-fFgg', // Extracted from your URL
+        playerVars: {
+          start: 0, // Start from the beginning
+          autoplay: 1, // Enable autoplay
+          controls: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+        },
+        events: {
+          onReady: (event: any) => {
+            setIsYouTubeReady(true);
+            event.target.setVolume(volume * 100);
+            // Attempt autoplay after player is ready
+            setTimeout(() => {
+              try {
+                event.target.playVideo();
+              } catch (error) {
+                console.log('Autoplay blocked by browser - user interaction required');
+              }
+            }, 100);
+          },
+          onStateChange: (event: any) => {
+            const playerState = event.data;
+            if (playerState === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+            } else if (playerState === window.YT.PlayerState.PAUSED || playerState === window.YT.PlayerState.ENDED) {
+              setIsPlaying(false);
+            }
+          },
+        },
+      });
+    };
+
+    // Add document click handler for autoplay fallback
+    const handleFirstInteraction = () => {
+      if (!hasUserInteracted && youtubePlayerRef.current && isYouTubeReady) {
+        setHasUserInteracted(true);
+        try {
+          youtubePlayerRef.current.playVideo();
+        } catch (error) {
+          console.log('Unable to start autoplay');
+        }
+        document.removeEventListener('click', handleFirstInteraction);
+      }
+    };
+
+    loadYouTubeAPI();
+
+    // Add one-time click listener for autoplay fallback
+    document.addEventListener('click', handleFirstInteraction);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.destroy();
+      }
+    };
+  }, [volume]);
 
   const handleFileUpload = useCallback((file: File, type: 'resume' | 'jobdesc') => {
     const sizeInKB = file.size / 1024;
@@ -112,14 +250,36 @@ function App() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full border border-gray-100">
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+      }`}>
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className={`fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+            isDarkMode 
+              ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+              : 'bg-white hover:bg-gray-50 text-gray-700'
+          }`}
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+        
+        <div className={`rounded-2xl shadow-2xl p-8 max-w-2xl w-full border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-100'
+        }`}>
           <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+              isDarkMode ? 'bg-green-900' : 'bg-green-100'
+            }`}>
+              <CheckCircle className={`w-8 h-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Challenge Generated!</h1>
-            <p className="text-gray-600">Your personalized coding challenge is ready</p>
+            <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Challenge Generated!</h1>
+            <p className={`${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>Your personalized coding challenge is ready</p>
           </div>
 
           <div className="space-y-6">
@@ -247,30 +407,121 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full border border-gray-100">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+    }`}>
+      {/* Dark Mode Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className={`fixed top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg z-10 ${
+          isDarkMode 
+            ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400' 
+            : 'bg-white hover:bg-gray-50 text-gray-700'
+        }`}
+      >
+        {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+      
+      <div className={`rounded-2xl shadow-2xl p-8 max-w-4xl w-full border ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-100'
+      }`}>
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
-            <img src="/aries-logo.svg" alt="ARIES Logo" className="w-16 h-16" />
+          <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4">
+            <img src="/aries-logo.svg" alt="ARIES Logo" className="w-20 h-20" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ARIES</h1>
-          <p className="text-lg font-medium text-gray-700 mb-4">Automated Routines for Intelligent Engineering Scenarios</p>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>ARIES</h1>
+          <p className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Automated Routines for Intelligent Engineering Scenarios</p>
+          <p className={`max-w-2xl mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Upload your resume and a job description to generate a personalized coding challenge. 
             We'll create a GitHub repository with tailored tasks based on the role requirements.
           </p>
         </div>
 
+        {/* Audio Player */}
+        <div className="mb-6">
+          <div className={`backdrop-blur-sm rounded-lg p-4 shadow-sm border max-w-sm mx-auto ${
+            isDarkMode 
+              ? 'bg-gray-700/50 border-gray-600' 
+              : 'bg-white/50 border-gray-100'
+          }`}>
+            <div className="flex items-center space-x-3">
+              {/* Play/Pause Button */}
+              <button
+                onClick={togglePlay}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm"
+                style={{ 
+                  backgroundColor: '#00A287',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00917A'}
+                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#00A287'}
+              >
+                {isPlaying ? (
+                  <Pause className="w-3 h-3" />
+                ) : (
+                  <Play className="w-3 h-3 ml-0.5" />
+                )}
+              </button>
+
+              {/* Volume Controls */}
+              <div className="flex items-center space-x-2 flex-1">
+                <button
+                  onClick={toggleMute}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                    isDarkMode 
+                      ? 'bg-gray-600 hover:bg-gray-500' 
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  {isMuted ? (
+                    <VolumeX className={`w-3 h-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
+                  ) : (
+                    <Volume2 className={`w-3 h-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
+                  )}
+                </button>
+                
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer volume-slider ${
+                    isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
+                  }`}
+                />
+              </div>
+
+              {/* Audio Info */}
+              <div className="text-right">
+                <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>All Your Base</div>
+              </div>
+            </div>
+
+            {/* Hidden YouTube Player */}
+            <div id="youtube-player" style={{ display: 'none' }}></div>
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Resume Upload */}
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
               1. Upload Your Resume
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'resume')}
               onDragOver={handleDragOver}
-              className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+                isDarkMode
+                  ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+              }`}
             >
               {resumeFile ? (
                 <div className="space-y-3">
@@ -285,12 +536,16 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 group-hover:text-blue-600 mx-auto transition-colors" />
+                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-400 group-hover:text-blue-400' 
+                      : 'text-gray-400 group-hover:text-blue-600'
+                  }`} />
                   <div>
-                    <p className="text-gray-700 font-medium">Drop your resume here</p>
-                    <p className="text-gray-500 text-sm">or click to browse</p>
+                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop your resume here</p>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className="text-xs text-gray-400">PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -304,13 +559,17 @@ function App() {
 
           {/* Job Description Upload */}
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
               2. Upload Job Description
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'jobdesc')}
               onDragOver={handleDragOver}
-              className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+                isDarkMode
+                  ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+              }`}
             >
               {jobDescFile ? (
                 <div className="space-y-3">
@@ -325,12 +584,16 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 group-hover:text-blue-600 mx-auto transition-colors" />
+                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-400 group-hover:text-blue-400' 
+                      : 'text-gray-400 group-hover:text-blue-600'
+                  }`} />
                   <div>
-                    <p className="text-gray-700 font-medium">Drop job description here</p>
-                    <p className="text-gray-500 text-sm">or click to browse</p>
+                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop job description here</p>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className="text-xs text-gray-400">PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -382,33 +645,39 @@ function App() {
             )}
           </button>
           
-          <p className="text-xs text-gray-500 mt-4 max-w-lg mx-auto">
+          <p className={`text-xs mt-4 max-w-lg mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             3. Click "Generate Challenge" to create your personalized coding challenge and GitHub repository
           </p>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100">
+        <div className={`mt-8 pt-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
           <div className="grid md:grid-cols-3 gap-4 text-center">
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">1</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>1</span>
               </div>
-              <h3 className="font-medium text-gray-900">Upload Files</h3>
-              <p className="text-xs text-gray-600">Resume and job description</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Upload Files</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Resume and job description</p>
             </div>
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">2</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>2</span>
               </div>
-              <h3 className="font-medium text-gray-900">AI Analysis</h3>
-              <p className="text-xs text-gray-600">Match skills to requirements</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>AI Analysis</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Match skills to requirements</p>
             </div>
             <div className="space-y-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-blue-600 font-bold text-sm">3</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
+                isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
+              }`}>
+                <span className={`font-bold text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>3</span>
               </div>
-              <h3 className="font-medium text-gray-900">Get Challenge</h3>
-              <p className="text-xs text-gray-600">Personalized coding tasks</p>
+              <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Get Challenge</h3>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Personalized coding tasks</p>
             </div>
           </div>
         </div>
