@@ -1,0 +1,43 @@
+services:
+  # Frontend development server
+  frontend:
+    build:
+      context: .
+      target: frontend-builder
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+    command: bun run dev --host 0.0.0.0 --force
+    depends_on:
+      - functions
+
+  # Firebase Functions emulator
+  functions:
+    build:
+      context: .
+      target: functions
+    ports:
+      - "5001:5001"
+      - "4000:4000"  # Firebase emulator UI
+      - "8080:8080"  # Firestore emulator
+      - "9099:9099"  # Firebase Auth emulator
+    volumes:
+      - ./functions:/app/functions
+      - /app/functions/node_modules
+    environment:
+      - NODE_ENV=development
+      - FUNCTIONS_EMULATOR=true
+    env_file:
+      - .env
+    command: firebase emulators:start --only functions --project=all-your-base-3a55f
+
+networks:
+  default:
+    name: bryce-tech-challenge-network

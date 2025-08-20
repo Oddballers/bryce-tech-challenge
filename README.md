@@ -10,29 +10,60 @@ ARIES is a modern web application that generates personalized coding challenges 
 - **Background Audio:** Fun retro audio on load, with a mute/unmute toggle.
 - **Built with:** React 18, Vite, TypeScript, Tailwind CSS, Firebase, and Bun.
 
-## Quick Start (with Bun)
+## Quick Start
+
+### Option 1: Docker (Recommended)
 
 1. **Clone the repository:**
    ```bash
    git clone <your-repo-url>
-   cd bs-challenge
+   cd bryce-tech-challenge
    ```
 
-2. **Install dependencies:**
+2. **Set up environment variables:**
+   Create a `.env` file in the root directory with your Firebase credentials:
+   ```env
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+   VITE_FIREBASE_APP_ID=1:123456789:web:abcdef
+   VITE_FUNCTION_URL=http://localhost:5001/your_project_id/us-central1
+   ```
+
+3. **Start with Docker:**
    ```bash
+   docker-compose up
+   ```
+   - Frontend: [http://localhost:5173](http://localhost:5173)
+   - Firebase Functions: [http://localhost:5001](http://localhost:5001)
+   - Firebase Emulator UI: [http://localhost:4000](http://localhost:4000)
+
+4. **Stop the containers:**
+   ```bash
+   docker-compose down
+   ```
+
+### Option 2: Local Development (with Bun)
+
+1. **Clone and install dependencies:**
+   ```bash
+   git clone <your-repo-url>
+   cd bryce-tech-challenge
    bun install
    ```
 
-3. **Set up environment variables:**
+2. **Set up environment variables:**
    - Copy `.env.example` to `.env` and fill in your Firebase project credentials and function URL.
 
-4. **Run the development server:**
+3. **Run the development server:**
    ```bash
    bun run dev
    ```
    The app will be available at [http://localhost:5173](http://localhost:5173).
 
-5. **Build for production:**
+4. **Build for production:**
    ```bash
    bun run build
    ```
