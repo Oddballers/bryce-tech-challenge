@@ -28,7 +28,11 @@ function App() {
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  
+  // New fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [jobDescText, setJobDescText] = useState('');
+  const [difficulty, setDifficulty] = useState('');
   // Simple audio: autoplay muted on load
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
@@ -123,8 +127,8 @@ function App() {
   }, []);
 
   const submitFiles = async () => {
-    if (!resumeFile || !jobDescFile) {
-      setError('Please upload both files before generating the challenge.');
+    if (!firstName.trim() || !lastName.trim() || !jobDescText.trim() || !difficulty || !resumeFile || !jobDescFile) {
+      setError('Please complete all fields and upload both files before generating the challenge.');
       return;
     }
 
@@ -135,9 +139,13 @@ function App() {
       const formData = new FormData();
       formData.append('resume', resumeFile.file);
       formData.append('job_description', jobDescFile.file);
+      formData.append('first_name', firstName);
+      formData.append('last_name', lastName);
+      formData.append('job_desc_text', jobDescText);
+      formData.append('difficulty', difficulty);
 
       // Use environment variable for function URL, fallback to placeholder
-      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallengeV2';
+      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge';
       const response = await fetch(functionUrl, {
         method: 'POST',
         body: formData,
@@ -148,7 +156,25 @@ function App() {
       }
 
       const data = await response.json();
-      setResult(data);
+      // Add last name and job description to the repo link for uniqueness
+      if (data && data.githubRepo && lastName && jobDescText) {
+        // Hyphenate job description, remove extra spaces, lowercase
+        const jobDescSlug = jobDescText.trim().toLowerCase().replace(/\s+/g, '-');
+        const lastNameSlug = lastName.trim().toLowerCase();
+        // Insert at the end of the repo name (before .git if present)
+        let repoUrl = data.githubRepo;
+        const match = repoUrl.match(/^(https:\/\/github.com\/[^\/]+\/)([^\/]+)(\.git)?$/);
+        if (match) {
+          const base = match[1];
+          const repo = match[2];
+          const dotGit = match[3] || '';
+          const newRepo = `${repo}-${lastNameSlug}-${jobDescSlug}`;
+          repoUrl = `${base}${newRepo}${dotGit}`;
+        }
+        setResult({ ...data, githubRepo: repoUrl });
+      } else {
+        setResult(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while generating the challenge.');
     } finally {
@@ -161,6 +187,10 @@ function App() {
     setJobDescFile(null);
     setResult(null);
     setError(null);
+    setFirstName('');
+    setLastName('');
+    setJobDescText('');
+    setDifficulty('');
   };
 
   // When signed out show Login
@@ -400,46 +430,100 @@ function App() {
           </button>
         </div>
 
-  {/* YouTube player removed */}
+        {/* New: User Info and Job Description/Difficulty */}
+        <div className="mb-8 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>First Name</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-2 text-base focus:outline-none focus:ring-2 transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-400'}`}
+                placeholder="Enter your first name"
+                autoComplete="given-name"
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Last Name</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-2 text-base focus:outline-none focus:ring-2 transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-400'}`}
+                placeholder="Enter your last name"
+                autoComplete="family-name"
+              />
+            </div>
+          </div>
+          {/* Job Title and Difficulty on same line */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Job Title</label>
+              <input
+                type="text"
+                value={jobDescText}
+                onChange={e => setJobDescText(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-2 text-base focus:outline-none focus:ring-2 transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-400'}`}
+                placeholder="e.g. Frontend Developer, Data Scientist, etc."
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Difficulty</label>
+              <select
+                value={difficulty}
+                onChange={e => setDifficulty(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-2 text-base focus:outline-none focus:ring-2 transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-400'}`}
+              >
+                <option value="" disabled>Selected difficulty</option>
+                <option value="junior">Junior</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="senior">Senior</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Resume Upload */}
           <div className="space-y-4">
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}> 
               1. Upload Your Resume
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'resume')}
               onDragOver={handleDragOver}
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 cursor-pointer group ${
                 isDarkMode
                   ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
                   : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
               }`}
+              style={{ minHeight: '120px', maxWidth: '260px', margin: '0 auto' }}
             >
               {resumeFile ? (
-                <div className="space-y-3">
-                  <FileText className="w-12 h-12 text-green-600 mx-auto" />
-                  <p className="text-sm font-medium text-gray-900">{resumeFile.preview}</p>
+                <div className="space-y-2">
+                  <FileText className="w-4 h-4 text-green-600 mx-auto" style={{ width: '18%', height: '18%' }} />
+                  <p className={`text-xs font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{resumeFile.preview}</p>
                   <button
                     onClick={() => removeFile('resume')}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                    className={`text-xs font-medium transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
                   >
                     Remove file
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                <div className="space-y-2">
+                  <Upload className={`w-4 h-4 mx-auto transition-colors ${
                     isDarkMode 
                       ? 'text-gray-400 group-hover:text-blue-400' 
                       : 'text-gray-400 group-hover:text-blue-600'
-                  }`} />
+                  }`} style={{ width: '18%', height: '18%' }} />
                   <div>
-                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop your resume here</p>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
+                    <p className={`font-medium text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop your resume here</p>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-[10px] ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -453,41 +537,42 @@ function App() {
 
           {/* Job Description Upload */}
           <div className="space-y-4">
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}> 
               2. Upload Job Description
             </label>
             <div
               onDrop={(e) => handleDrop(e, 'jobdesc')}
               onDragOver={handleDragOver}
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer group ${
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 cursor-pointer group ${
                 isDarkMode
                   ? 'border-gray-600 hover:border-blue-400 hover:bg-blue-900/20'
                   : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
               }`}
+              style={{ minHeight: '120px', maxWidth: '260px', margin: '0 auto' }}
             >
               {jobDescFile ? (
-                <div className="space-y-3">
-                  <FileText className="w-12 h-12 text-green-600 mx-auto" />
-                  <p className="text-sm font-medium text-gray-900">{jobDescFile.preview}</p>
+                <div className="space-y-2">
+                  <FileText className="w-4 h-4 text-green-600 mx-auto" style={{ width: '18%', height: '18%' }} />
+                  <p className={`text-xs font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{jobDescFile.preview}</p>
                   <button
                     onClick={() => removeFile('jobdesc')}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                    className={`text-xs font-medium transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
                   >
                     Remove file
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Upload className={`w-12 h-12 mx-auto transition-colors ${
+                <div className="space-y-2">
+                  <Upload className={`w-4 h-4 mx-auto transition-colors ${
                     isDarkMode 
                       ? 'text-gray-400 group-hover:text-blue-400' 
                       : 'text-gray-400 group-hover:text-blue-600'
-                  }`} />
+                  }`} style={{ width: '18%', height: '18%' }} />
                   <div>
-                    <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop job description here</p>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
+                    <p className={`font-medium text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drop job description here</p>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>or click to browse</p>
                   </div>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
+                  <p className={`text-[10px] ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>PDF, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
               )}
               <input
@@ -510,18 +595,26 @@ function App() {
         <div className="text-center">
           <button
             onClick={submitFiles}
-            disabled={!resumeFile || !jobDescFile || isUploading}
+            disabled={
+              !firstName.trim() ||
+              !lastName.trim() ||
+              !jobDescText.trim() ||
+              !difficulty ||
+              !resumeFile ||
+              !jobDescFile ||
+              isUploading
+            }
             className="text-white px-8 py-4 rounded-xl font-semibold disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center mx-auto min-w-[200px]"
             style={{ 
-              backgroundColor: (!resumeFile || !jobDescFile || isUploading) ? '#9CA3AF' : '#00A287'
+              backgroundColor: (!firstName.trim() || !lastName.trim() || !jobDescText.trim() || !difficulty || !resumeFile || !jobDescFile || isUploading) ? '#9CA3AF' : '#00A287'
             }}
             onMouseEnter={(e) => {
-              if (resumeFile && jobDescFile && !isUploading) {
-                (e.target as HTMLButtonElement).style.backgroundColor = '#00917A';
+              if (firstName.trim() && lastName.trim() && jobDescText.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#00A287';
               }
             }}
             onMouseLeave={(e) => {
-              if (resumeFile && jobDescFile && !isUploading) {
+              if (firstName.trim() && lastName.trim() && jobDescText.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
                 (e.target as HTMLButtonElement).style.backgroundColor = '#00A287';
               }
             }}
