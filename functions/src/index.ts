@@ -115,13 +115,13 @@ export const generateCodingChallenge = onRequest(
 
       const prompt = `You are an expert technical interviewer. Based on the resume below and the job description, generate a coding challenge that tests relevant skills. The challenge should be appropriate for a(n) ${
         difficulty || "intermediate"
-      } Take 40% of the user's resume and 60% of the job description when creating this challenge.  
+      } and then continue with the rest of the problem description. Take 40% of the user's resume and 60% of the job description when creating this challenge.  
     Add several starter code files for the user to work with.  Make sure to add some bugs in these starter files.  Do not call out in the file where the bug is located.  Keep this a secret. This coding challenge needs to be in text format, styled for a GitHub readme.\n\nResume:\n${resumeText}\n\nJob Description:\n${jdText}\n\nGenerate a coding challenge with the following structure:\n# Coding Challenge\n## Problem Description\n## Requirements\n## Technical Specifications\n## Evaluation Criteria\n## Submission Instructions\n\nCoding Challenge:
     
     *Requirements* 
     - Do not stop until you are done creating the challenge.
     - You must generate sample code file to use in the challenge.
-    - Be sure to include the name of the user in the challenge prompt.
+    - Be sure to include the name of the user in the challenge prompt using ${firstName} in the Problem Description.
     - Be sure to include the job title in the introduction.
     - The challenge should be able to be completed in 90 minutes.`;
 
