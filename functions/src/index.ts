@@ -60,14 +60,15 @@ export const generateCodingChallenge = onRequest(
       type MultipartFields = {
         difficulty?: string;
         first_name?: string;
-        job_desc_text?: string;
+        job_title?: string;
+        last_name?: string;
       };
       const multipartResult = (await parseMultipart(req)) as {
         resumeBuffer?: Buffer;
         jdBuffer?: Buffer;
         rawError?: string;
       } & MultipartFields;
-      const { resumeBuffer, jdBuffer, rawError, difficulty } = multipartResult;
+      const { resumeBuffer, jdBuffer, rawError, difficulty, first_name, last_name, job_title } = multipartResult;
 
       if (rawError === "UNEXPECTED_END") {
         // Provide a clearer error for client to possibly retry
@@ -94,18 +95,6 @@ export const generateCodingChallenge = onRequest(
       const resumeText = resumeBuffer.toString("utf-8");
       const jdText = jdBuffer.toString("utf-8");
 
-      // Extract first name and job title from form fields if available
-      let firstName = "";
-      let jobTitle = "";
-      if (typeof multipartResult.first_name === "string") {
-        firstName = multipartResult.first_name.trim();
-      }
-      if (typeof multipartResult.job_desc_text === "string") {
-        jobTitle = multipartResult.job_desc_text.trim();
-      }
-      logger.info(`First name received: '${firstName}'`);
-      logger.info(`Job title received: '${jobTitle}'`);
-
       if (!resumeText.trim() || !jdText.trim()) {
         res
           .status(400)
@@ -121,8 +110,8 @@ export const generateCodingChallenge = onRequest(
     *Requirements* 
     - Do not stop until you are done creating the challenge.
     - You must generate sample code file to use in the challenge.
-    - Be sure to include the name of the user in the challenge prompt using ${firstName} in the Problem Description.
-    - Be sure to include the job title in the introduction.
+    - Be sure to include the name of the user in the challenge prompt using ${first_name} in the Problem Description, if provided.
+    - Be sure to include the ${job_title || ''} in the introduction, if provided.
     - The challenge should be able to be completed in 90 minutes.`;
 
       logger.info("Making OpenAI API call...");
@@ -154,7 +143,9 @@ export const generateCodingChallenge = onRequest(
       const repoInfo = await initializeGitRepo(
         output,
         githubToken,
-        githubUsername
+        githubUsername,
+        last_name,
+        job_title
       );
       logger.info("Repository initialized successfully");
 
@@ -194,13 +185,16 @@ export const generateCodingChallenge = onRequest(
 async function initializeGitRepo(
   cdChallenge: string,
   githubToken: string,
-  githubUsername: string
+  githubUsername: string,
+  last_name?: string,
+  job_title?: string
 ) {
   try {
     const octokit = new Octokit({ auth: githubToken });
     logger.info("Creating GitHub repo...");
     const timestamp = Date.now();
-    const uniqueRepoName = `${REPO_NAME}-${timestamp}`;
+    const slugify = (str?: string) => str ? str.trim().replace(/\s+/g, ' ').toLowerCase().split(' ').join('-') : '';
+    const uniqueRepoName = `${REPO_NAME}-${timestamp}-${last_name?.toLowerCase()}-${slugify(job_title)}`;
     const repoResponse = await octokit.rest.repos.createForAuthenticatedUser({
       name: uniqueRepoName,
       private: false,
@@ -273,12 +267,13 @@ async function initializeGitRepo(
 // Uses req.rawBody when available (provided by Functions) to avoid streaming truncation causing 'Unexpected end of form'.
 function parseMultipart(
   req: any
-): Promise<{ resumeBuffer?: Buffer; jdBuffer?: Buffer; rawError?: string }> {
+): Promise<{ resumeBuffer?: Buffer; jdBuffer?: Buffer; rawError?: string; [key: string]: any }> {
   return new Promise((resolve) => {
     let resumeBuffer: Buffer | undefined;
     let jdBuffer: Buffer | undefined;
     let finished = false;
     let encounteredUnexpectedEnd = false;
+    const fields: { [key: string]: string } = {};
 
     try {
       const busboy = Busboy({
@@ -310,7 +305,8 @@ function parseMultipart(
       );
 
       busboy.on("field", (f: string, v: string) => {
-        logger.debug?.(`Field ${f} length=${v?.length}`);
+        logger.debug?.(`Field ${f} = ${v} length=${v?.length}`);
+        fields[f] = v;
       });
 
       busboy.on("error", (err: any) => {
@@ -327,6 +323,7 @@ function parseMultipart(
           resumeBuffer,
           jdBuffer,
           rawError: encounteredUnexpectedEnd ? "UNEXPECTED_END" : undefined,
+          ...fields,
         });
       };
 
@@ -445,7 +442,7 @@ export const generateCodingChallengeV2 = onRequest(
       const repoInfo = await initializeGitRepo(
         output,
         githubToken,
-        githubUsername
+        githubUsername,
       );
       logger.info("Repository initialized successfully");
 
