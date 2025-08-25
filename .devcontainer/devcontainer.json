@@ -1,0 +1,33 @@
+// This file tells VS Code to use the dev container
+{
+  "name": "Node.js & Firebase Functions",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/firebase-tools:latest": {},
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "editor.formatOnSave": true,
+        "eslint.enable": true
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "ms-vsliveshare.vsliveshare",
+        "ms-azuretools.vscode-docker",
+        "firebase.firebase-vscode",
+        "GitHub.copilot",
+        "GitHub.vscode-pull-request-github"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install -g bun && bun install && cd functions && bun install",
+  "forwardPorts": [5173, 5001, 4000],
+  "remoteUser": "node"
+}
