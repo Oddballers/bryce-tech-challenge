@@ -57,6 +57,13 @@ function App() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    console.log("first name: ", firstName);
+    console.log("last name: ", lastName);
+    console.log("job description: ", jobDescText);
+    console.log("difficulty: ", difficulty);
+  }, [firstName, lastName, jobDescText, difficulty]);
+
   const handleSignOut = useCallback(async () => {
     await signOut(auth);
   }, []);
