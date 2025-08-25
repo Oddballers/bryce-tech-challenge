@@ -149,7 +149,7 @@ function App() {
       const functionUrl = import.meta.env.VITE_FUNCTION_URL || 
         (isProduction 
           ? 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge'
-          : 'http://127.0.0.1:5002/all-your-base-3a55f/us-central1/generateCodingChallenge'
+          : 'http://127.0.0.1:5001/all-your-base-3a55f/us-central1/generateCodingChallenge'
         );
       const response = await fetch(functionUrl, {
         method: 'POST',
