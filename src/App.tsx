@@ -31,7 +31,7 @@ function App() {
   // New fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [jobDescText, setJobDescText] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [difficulty, setDifficulty] = useState('');
   // Simple audio: autoplay muted on load
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -127,7 +127,7 @@ function App() {
   }, []);
 
   const submitFiles = async () => {
-    if (!firstName.trim() || !lastName.trim() || !jobDescText.trim() || !difficulty || !resumeFile || !jobDescFile) {
+    if (!firstName.trim() || !lastName.trim() || !jobTitle.trim() || !difficulty || !resumeFile || !jobDescFile) {
       setError('Please complete all fields and upload both files before generating the challenge.');
       return;
     }
@@ -141,11 +141,16 @@ function App() {
       formData.append('job_description', jobDescFile.file);
       formData.append('first_name', firstName);
       formData.append('last_name', lastName);
-      formData.append('job_desc_text', jobDescText);
+      formData.append('job_title', jobTitle);
       formData.append('difficulty', difficulty);
 
-      // Use environment variable for function URL, fallback to placeholder
-      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge';
+      // Use environment variable for function URL, fallback based on development mode
+      const isProduction = import.meta.env.PROD;
+      const functionUrl = import.meta.env.VITE_FUNCTION_URL || 
+        (isProduction 
+          ? 'https://us-central1-all-your-base-3a55f.cloudfunctions.net/generateCodingChallenge'
+          : 'http://127.0.0.1:5001/all-your-base-3a55f/us-central1/generateCodingChallenge'
+        );
       const response = await fetch(functionUrl, {
         method: 'POST',
         body: formData,
@@ -156,25 +161,7 @@ function App() {
       }
 
       const data = await response.json();
-      // Add last name and job description to the repo link for uniqueness
-      if (data && data.githubRepo && lastName && jobDescText) {
-        // Hyphenate job description, remove extra spaces, lowercase
-        const jobDescSlug = jobDescText.trim().toLowerCase().replace(/\s+/g, '-');
-        const lastNameSlug = lastName.trim().toLowerCase();
-        // Insert at the end of the repo name (before .git if present)
-        let repoUrl = data.githubRepo;
-        const match = repoUrl.match(/^(https:\/\/github.com\/[^\/]+\/)([^\/]+)(\.git)?$/);
-        if (match) {
-          const base = match[1];
-          const repo = match[2];
-          const dotGit = match[3] || '';
-          const newRepo = `${repo}-${lastNameSlug}-${jobDescSlug}`;
-          repoUrl = `${base}${newRepo}${dotGit}`;
-        }
-        setResult({ ...data, githubRepo: repoUrl });
-      } else {
-        setResult(data);
-      }
+      setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while generating the challenge.');
     } finally {
@@ -189,7 +176,7 @@ function App() {
     setError(null);
     setFirstName('');
     setLastName('');
-    setJobDescText('');
+    setJobTitle('');
     setDifficulty('');
   };
 
@@ -462,8 +449,8 @@ function App() {
               <label className={`block text-sm font-semibold mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Job Title</label>
               <input
                 type="text"
-                value={jobDescText}
-                onChange={e => setJobDescText(e.target.value)}
+                value={jobTitle}
+                onChange={e => setJobTitle(e.target.value)}
                 className={`w-full rounded-lg border px-3 py-2 text-base focus:outline-none focus:ring-2 transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-400'}`}
                 placeholder="e.g. Frontend Developer, Data Scientist, etc."
                 autoComplete="off"
@@ -598,7 +585,7 @@ function App() {
             disabled={
               !firstName.trim() ||
               !lastName.trim() ||
-              !jobDescText.trim() ||
+              !jobTitle.trim() ||
               !difficulty ||
               !resumeFile ||
               !jobDescFile ||
@@ -606,15 +593,15 @@ function App() {
             }
             className="text-white px-8 py-4 rounded-xl font-semibold disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center mx-auto min-w-[200px]"
             style={{ 
-              backgroundColor: (!firstName.trim() || !lastName.trim() || !jobDescText.trim() || !difficulty || !resumeFile || !jobDescFile || isUploading) ? '#9CA3AF' : '#00A287'
+              backgroundColor: (!firstName.trim() || !lastName.trim() || !jobTitle.trim() || !difficulty || !resumeFile || !jobDescFile || isUploading) ? '#9CA3AF' : '#00A287'
             }}
             onMouseEnter={(e) => {
-              if (firstName.trim() && lastName.trim() && jobDescText.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
+              if (firstName.trim() && lastName.trim() && jobTitle.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
                 (e.target as HTMLButtonElement).style.backgroundColor = '#00A287';
               }
             }}
             onMouseLeave={(e) => {
-              if (firstName.trim() && lastName.trim() && jobDescText.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
+              if (firstName.trim() && lastName.trim() && jobTitle.trim() && difficulty && resumeFile && jobDescFile && !isUploading) {
                 (e.target as HTMLButtonElement).style.backgroundColor = '#00A287';
               }
             }}
