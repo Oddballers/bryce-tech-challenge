@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Production frontend (Nginx serving built files)
+  frontend:
+    build:
+      context: .
+      target: frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    depends_on:
+      - functions
+
+  # Production Firebase Functions
+  functions:
+    build:
+      context: .
+      target: functions
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
+    env_file:
+      - .env.production
+      - ./functions/.env.production
+    volumes:
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro
+    restart: unless-stopped
+    command: npm start
+
+  # Optional: Reverse proxy (uncomment if needed)
+  # nginx-proxy:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - frontend
+  #     - functions
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: bryce-tech-challenge-prod-network

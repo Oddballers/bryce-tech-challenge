@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+functions/node_modules
+**/node_modules
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Environment files (add to container via env_file in docker-compose)
+.env
+.env.local
+.env.production
+.env.*.local
+functions/.env
+functions/.env.local
+functions/.env.production
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Firebase
+.firebase
+firebase-debug.log
+firestore-debug.log
+
+# Service account keys (should be mounted as volume in production)
+**/serviceAccountKey.json
+**/*-service-account-*.json
+
+# Cache
+.cache
+.parcel-cache
+
+# Coverage
+coverage
+
+# Temporary files
+*.tmp
+*.temp
