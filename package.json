@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"firebase emulators:start\" \"vite\"",
+    "dev": "concurrently \"cd functions && npm i && npm run build && cd .. && firebase emulators:start\" \"vite\"",
     "dev:app-only": "vite",
     "build": "vite build",
     "lint": "eslint .",
