@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { setGlobalOptions } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import { onRequest } from "firebase-functions/v2/https";
@@ -28,7 +29,15 @@ const BRANCH_NAME = "feature/initial-setup";
 
 export const generateCodingChallenge = onRequest(
   { cors: true, secrets: [OPENAI_API_KEY, GITHUB_TOKEN, GITHUB_USERNAME] },
-  async (req, res) => {
+
+  async (req, res) => { 
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");     
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
     logger.info("=== TEST LOG: generateCodingChallenge function triggered ===");
     try {
       // Add logging to debug environment variables
